@@ -2,9 +2,7 @@
 
 This repo contains a sample application **for demonstration purposes only**, walking through how to create sub-organizations, create private keys, and sign with the [`@turnkey/viem`](https://github.com/tkhq/sdk/tree/main/packages/viem) signer, using passkeys. Please feel free to clone or fork this repo, or file an issue if there are improvements to be made! ❤️
 
-<img src="./img/home.png" width="300"/>
-<img src="./img/wallet.png" width="300"/>
-<img src="./img/signature.png" width="300"/>
+<img src="./img/home.png" width="300"/><img src="./img/wallet.png" width="300"/><img src="./img/signature.png" width="300"/>
 
 The flow showcases 3 ways to make requests to Turnkey:
 
