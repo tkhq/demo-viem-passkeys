@@ -2,12 +2,14 @@
 
 This repo contains a sample application **for demonstration purposes only**, walking through how to create sub-organizations, create private keys, and sign with the [`@turnkey/viem`](https://github.com/tkhq/sdk/tree/main/packages/viem) signer, using passkeys. Please feel free to clone or fork this repo, or file an issue if there are improvements to be made! ❤️
 
-![UI screenshot](./img/ui-screenshot.png)
+<img src="./img/home.png" width="300"/>
+<img src="./img/wallet.png" width="300"/>
+<img src="./img/signature.png" width="300"/>
 
 The flow showcases 3 ways to make requests to Turnkey:
 
 - the initial request to create a new [sub-organization](https://docs.turnkey.com/getting-started/sub-organizations) is authenticated in the NextJS backend with an API signature (using `API_PUBLIC_KEY`/`API_PRIVATE_KEY` from your `.env.local` file)
-- the request to create a new ETH address is signed on the frontend with your passkey, but it's passed to the NextJS backend as a signed request (the body, stamp, and url are POSTed). This lets the backend submit this request on your behalf, and poll until the new "create private keys" activity completes. Once the activity completes it returns the new address to the frontend
+- the request to log back in is signed on the frontend with your passkey, but it's passed to the NextJS backend as a signed request (the body, stamp, and url are POSTed). This lets the backend submit this request on your behalf, get your sub-organization ID, and fetch details about your wallet (parent organizations have read-only access to their sub-organizations).
 - the request to sign a message is done 100% client-side via a Turnkey Viem signer (see [@turnkey/viem](https://github.com/tkhq/sdk/tree/main/packages/viem)): it's signed with your passkey, and submitted from the browser to the Turnkey API directly.
 
 If you want to see a Viem demo with API keys instead of passkeys, head to the example [`with-viem`](https://github.com/tkhq/sdk/tree/main/examples/with-viem). A demo using passkeys with Ethers can be found [here](https://github.com/tkhq/demo-ethers-passkeys). See our [SDK repo](https://github.com/tkhq/sdk) for additional packages and examples.
