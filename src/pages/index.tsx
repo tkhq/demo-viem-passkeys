@@ -1,4 +1,3 @@
-import Image from "next/image";
 import styles from "./index.module.css";
 import { getWebAuthnAttestation, TurnkeyClient } from "@turnkey/http";
 import { createAccount } from "@turnkey/viem";
@@ -9,6 +8,12 @@ import { useState } from "react";
 import { createWalletClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import { TWalletDetails } from "../types";
+
+import Logo from "@/components/Logo";
+import SignedMessageOutput from "@/components/SignMessageOutput";
+import NewWallet from "@/components/NewWallet";
+import ExistingWallet from "@/components/ExistingWallet";
+import SignMessageInput from "@/components/SignMessageInput";
 
 type subOrgFormData = {
   subOrgName: string;
@@ -159,16 +164,7 @@ export default function Home() {
 
   return (
     <main className={styles.main}>
-      <a href="https://turnkey.com" target="_blank" rel="noopener noreferrer">
-        <Image
-          src="/logo.svg"
-          alt="Turnkey Logo"
-          className={styles.turnkeyLogo}
-          width={100}
-          height={24}
-          priority
-        />
-      </a>
+      <Logo />
       <div>
         {wallet !== null && (
           <div className={styles.info}>
@@ -182,126 +178,19 @@ export default function Home() {
             <span className={styles.code}>{wallet.address}</span>
           </div>
         )}
-        {signedMessage && (
-          <div className={styles.info}>
-            Message: <br />
-            <span className={styles.code}>{signedMessage.message}</span>
-            <br />
-            <br />
-            Signature: <br />
-            <span className={styles.code}>{signedMessage.signature}</span>
-            <br />
-            <br />
-            <a
-              href="https://etherscan.io/verifiedSignatures"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Verify with Etherscan
-            </a>
-          </div>
-        )}
+        {signedMessage && <SignedMessageOutput signedMessage={signedMessage} />}
       </div>
       {!wallet && (
-        <div>
-          <h2>Create a new wallet</h2>
-          <p className={styles.explainer}>
-            We&apos;ll prompt your browser to create a new passkey. The details
-            (credential ID, authenticator data, client data, attestation) will
-            be used to create a new{" "}
-            <a
-              href="https://docs.turnkey.com/getting-started/sub-organizations"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Turnkey Sub-Organization
-            </a>
-            and a new{" "}
-            <a
-              href="https://docs.turnkey.com/getting-started/wallets"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-            Wallet
-            </a> within it.
-            <br />
-            <br />
-            This request to Turnkey will be created and signed by the backend
-            API key pair.
-          </p>
-          <form
-            className={styles.form}
-            onSubmit={subOrgFormSubmit(createSubOrgAndWallet)}
-          >
-            <input
-              className={styles.button}
-              type="submit"
-              value="Create new wallet"
-            />
-          </form>
-          <br />
-          <br />
-          <h2>Already created your wallet? Log back in</h2>
-          <p className={styles.explainer}>
-            Based on the parent organization ID and a stamp from your passkey
-            used to created the sub-organization and wallet, we can look up your
-            sub-organization using the{" "}
-            <a
-              href="https://docs.turnkey.com/api#tag/Who-am-I"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Whoami endpoint.
-            </a>
-          </p>
-          <form className={styles.form} onSubmit={loginFormSubmit(login)}>
-            <input
-              className={styles.button}
-              type="submit"
-              value="Login to sub-org with existing passkey"
-            />
-          </form>
-        </div>
+        <>
+          <NewWallet onSubmit={subOrgFormSubmit(createSubOrgAndWallet)} />
+          <ExistingWallet onSubmit={loginFormSubmit(login)} />
+        </>
       )}
       {wallet !== null && (
-        <div>
-          <h2>Now let&apos;s sign something!</h2>
-          <p className={styles.explainer}>
-            We&apos;ll use a{" "}
-            <a
-              href="https://viem.sh/docs/accounts/custom.html"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Viem custom account
-            </a>{" "}
-            to do this, using{" "}
-            <a
-              href="https://www.npmjs.com/package/@turnkey/viem"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              @turnkey/viem
-            </a>
-            . You can kill your NextJS server if you want, everything happens on
-            the client-side!
-          </p>
-          <form
-            className={styles.form}
-            onSubmit={signingFormSubmit(signMessage)}
-          >
-            <input
-              className={styles.input}
-              {...signingFormRegister("messageToSign")}
-              placeholder="Write something to sign..."
-            />
-            <input
-              className={styles.button}
-              type="submit"
-              value="Sign Message"
-            />
-          </form>
-        </div>
+        <SignMessageInput
+          onSubmit={signingFormSubmit(signMessage)}
+          registerInput={signingFormRegister("messageToSign")}
+        />
       )}
     </main>
   );
