@@ -216,7 +216,7 @@ export default function Home() {
             >
               Turnkey Sub-Organization
             </a>
-            and a new{" "}
+            {" "}and a new{" "}
             <a
               href="https://docs.turnkey.com/getting-started/wallets"
               target="_blank"
