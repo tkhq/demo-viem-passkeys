@@ -1,13 +1,12 @@
-import Image from "next/image";
-import styles from "./index.module.css";
-import { getWebAuthnAttestation, TurnkeyClient } from "@turnkey/http";
 import { createAccount } from "@turnkey/viem";
+import { useTurnkey } from "@turnkey/sdk-react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import axios from "axios";
-import { WebauthnStamper } from "@turnkey/webauthn-stamper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createWalletClient, http } from "viem";
 import { sepolia } from "viem/chains";
+import styles from "./index.module.css";
 import { TWalletDetails } from "../types";
 
 type subOrgFormData = {
@@ -16,20 +15,6 @@ type subOrgFormData = {
 
 type signingFormData = {
   messageToSign: string;
-};
-
-const generateRandomBuffer = (): ArrayBuffer => {
-  const arr = new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  return arr.buffer;
-};
-
-const base64UrlEncode = (challenge: ArrayBuffer): string => {
-  return Buffer.from(challenge)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
 };
 
 type TWalletState = TWalletDetails | null;
@@ -44,6 +29,9 @@ const humanReadableDateTime = (): string => {
 };
 
 export default function Home() {
+  const { turnkey, passkeyClient } = useTurnkey();
+
+  // Wallet is used as a proxy for logged-in state
   const [wallet, setWallet] = useState<TWalletState>(null);
   const [signedMessage, setSignedMessage] = useState<TSignedMessage>(null);
 
@@ -53,16 +41,14 @@ export default function Home() {
   const { register: _loginFormRegister, handleSubmit: loginFormSubmit } =
     useForm();
 
-  const stamper = new WebauthnStamper({
-    rpId: "localhost",
+  // First, logout user if there is no current wallet set
+  useEffect(() => {
+    (async () => {
+      if (!wallet) {
+        await turnkey?.logoutUser();
+      }
+    })();
   });
-
-  const passkeyHttpClient = new TurnkeyClient(
-    {
-      baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
-    },
-    stamper
-  );
 
   const signMessage = async (data: signingFormData) => {
     if (!wallet) {
@@ -70,7 +56,7 @@ export default function Home() {
     }
 
     const viemAccount = await createAccount({
-      client: passkeyHttpClient,
+      client: passkeyClient!,
       organizationId: wallet.subOrgId,
       signWith: wallet.address,
       ethereumAddress: wallet.address,
@@ -93,39 +79,28 @@ export default function Home() {
   };
 
   const createSubOrgAndWallet = async () => {
-    const challenge = generateRandomBuffer();
     const subOrgName = `Turnkey Viem+Passkey Demo - ${humanReadableDateTime()}`;
-    const authenticatorUserId = generateRandomBuffer();
-
-    const attestation = await getWebAuthnAttestation({
+    const credential = await passkeyClient?.createUserPasskey({
       publicKey: {
         rp: {
           id: "localhost",
           name: "Turnkey Viem Passkey Demo",
         },
-        challenge,
-        pubKeyCredParams: [
-          {
-            type: "public-key",
-            alg: -7,
-          },
-          {
-            type: "public-key",
-            alg: -257,
-          },
-        ],
         user: {
-          id: authenticatorUserId,
           name: subOrgName,
           displayName: subOrgName,
         },
       },
     });
 
+    if (!credential?.encodedChallenge || !credential?.attestation) {
+      return false;
+    }
+
     const res = await axios.post("/api/createSubOrg", {
       subOrgName: subOrgName,
-      attestation,
-      challenge: base64UrlEncode(challenge),
+      challenge: credential?.encodedChallenge,
+      attestation: credential?.attestation,
     });
 
     const response = res.data as TWalletDetails;
@@ -134,22 +109,37 @@ export default function Home() {
 
   const login = async () => {
     try {
-      // We use the parent org ID, which we know at all times...
-      const signedRequest = await passkeyHttpClient.stampGetWhoami({
-        organizationId: process.env.NEXT_PUBLIC_ORGANIZATION_ID!,
-      });
-      // ...to get the sub-org ID, which we don't know at this point because we don't
-      // have a DB. Note that we are able to perform this lookup by using the
-      // credential ID from the users WebAuthn stamp.
-      // In our login endpoint we also fetch wallet details after we get the sub-org ID
-      // (our backend API key can do this: parent orgs have read-only access to their sub-orgs)
-      const res = await axios.post("/api/login", signedRequest);
-      if (res.status !== 200) {
-        throw new Error(`error while logging in (${res.status}): ${res.data}`);
+      // Initiate login (read-only passkey session)
+      const loginResponse = await passkeyClient?.login();
+      if (!loginResponse?.organizationId) {
+        return;
       }
 
-      const response = res.data as TWalletDetails;
-      setWallet(response);
+      const currentUserSession = await turnkey?.currentUserSession();
+      if (!currentUserSession) {
+        return;
+      }
+
+      const walletsResponse = await currentUserSession?.getWallets();
+      if (!walletsResponse?.wallets[0].walletId) {
+        return;
+      }
+
+      const walletId = walletsResponse?.wallets[0].walletId;
+      const walletAccountsResponse =
+        await currentUserSession?.getWalletAccounts({
+          organizationId: loginResponse?.organizationId,
+          walletId,
+        });
+      if (!walletAccountsResponse?.accounts[0].address) {
+        return;
+      }
+
+      setWallet({
+        id: walletId,
+        address: walletAccountsResponse?.accounts[0].address,
+        subOrgId: loginResponse.organizationId,
+      } as TWalletDetails);
     } catch (e: any) {
       const message = `caught error: ${e.toString()}`;
       console.error(message);
@@ -159,7 +149,11 @@ export default function Home() {
 
   return (
     <main className={styles.main}>
-      <a href="https://turnkey.com" target="_blank" rel="noopener noreferrer">
+      <a
+        href="https://turnkey.com"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <Image
           src="/logo.svg"
           alt="Turnkey Logo"
@@ -215,15 +209,16 @@ export default function Home() {
               rel="noopener noreferrer"
             >
               Turnkey Sub-Organization
-            </a>
-            {" "}and a new{" "}
+            </a>{" "}
+            and a new{" "}
             <a
               href="https://docs.turnkey.com/getting-started/wallets"
               target="_blank"
               rel="noopener noreferrer"
             >
-            Wallet
-            </a> within it.
+              Wallet
+            </a>{" "}
+            within it.
             <br />
             <br />
             This request to Turnkey will be created and signed by the backend
@@ -254,7 +249,10 @@ export default function Home() {
               Whoami endpoint.
             </a>
           </p>
-          <form className={styles.form} onSubmit={loginFormSubmit(login)}>
+          <form
+            className={styles.form}
+            onSubmit={loginFormSubmit(login)}
+          >
             <input
               className={styles.button}
               type="submit"
