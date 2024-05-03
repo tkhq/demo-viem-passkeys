@@ -13,10 +13,13 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@turnkey/http": "2.4.2",
-    "@turnkey/api-key-stamper": "0.3.0",
-    "@turnkey/webauthn-stamper": "0.4.2",
-    "@turnkey/viem": "0.4.8",
+    "@turnkey/api-key-stamper": "0.4.0",
+    "@turnkey/http": "^2.10.0",
+    "@turnkey/sdk-browser": "0.1.0",
+    "@turnkey/sdk-react": "0.1.0",
+    "@turnkey/sdk-server": "0.1.0",
+    "@turnkey/viem": "0.4.16",
+    "@turnkey/webauthn-stamper": "0.5.0",
     "@types/node": "20.3.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
