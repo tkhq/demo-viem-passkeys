@@ -8,6 +8,8 @@ import { createWalletClient, http } from "viem";
 import { sepolia } from "viem/chains";
 import styles from "./index.module.css";
 import { TWalletDetails } from "../types";
+import { TurnkeyClient } from "@turnkey/http";
+import { WebauthnStamper } from "@turnkey/webauthn-stamper";
 
 type subOrgFormData = {
   subOrgName: string;
@@ -55,27 +57,48 @@ export default function Home() {
       throw new Error("wallet not found");
     }
 
+    const turnkeyClient = new TurnkeyClient(
+      { baseUrl: process.env.NEXT_PUBLIC_BASE_URL! },
+      new WebauthnStamper({
+        rpId: process.env.NEXT_PUBLIC_RPID!,
+      })
+    );
+
     const viemAccount = await createAccount({
-      client: passkeyClient!,
+      client: turnkeyClient!,
       organizationId: wallet.subOrgId,
       signWith: wallet.address,
       ethereumAddress: wallet.address,
     });
 
-    const viemClient = createWalletClient({
-      account: viemAccount,
-      chain: sepolia,
-      transport: http(),
-    });
+    // TESTING
+    // const viemClient = createWalletClient({
+    //   account: viemAccount,
+    //   chain: sepolia,
+    //   transport: http(),
+    // });
 
-    const signedMessage = await viemClient.signMessage({
-      message: data.messageToSign,
-    });
+    try {
+      const signedMessage = await viemAccount.signMessage({
+        message: data.messageToSign,
+      });
+      console.log("signed message", signedMessage);
 
-    setSignedMessage({
-      message: data.messageToSign,
-      signature: signedMessage,
-    });
+      const signedTransaction = await viemAccount.signTransaction({
+        to: viemAccount.address,
+        value: BigInt(1),
+        type: "eip1559",
+        chainId: 1,
+      });
+      console.log("signed transaction", signedTransaction);
+
+      setSignedMessage({
+        message: data.messageToSign,
+        signature: signedMessage,
+      });
+    } catch (error: any) {
+      console.log("got an error:", error);
+    }
   };
 
   const createSubOrgAndWallet = async () => {
