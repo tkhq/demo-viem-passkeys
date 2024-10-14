@@ -1,7 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { Turnkey, TurnkeyApiTypes } from "@turnkey/sdk-server";
-import { refineNonNull } from "@/utils";
-import { TWalletDetails } from "@/types";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { Turnkey, TurnkeyApiTypes } from '@turnkey/sdk-server';
+import { refineNonNull } from '@/utils';
+import { TWalletDetails } from '@/types';
 
 // Default path for the first Ethereum address in a new HD wallet.
 // See https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki, paths are in the form:
@@ -9,9 +9,9 @@ import { TWalletDetails } from "@/types";
 // - Purpose is a constant set to 44' following the BIP43 recommendation.
 // - Coin type is set to 60 (ETH) -- see https://github.com/satoshilabs/slips/blob/master/slip-0044.md
 // - Account, Change, and Address Index are set to 0
-import { DEFAULT_ETHEREUM_ACCOUNTS } from "@turnkey/sdk-server";
+import { DEFAULT_ETHEREUM_ACCOUNTS } from '@turnkey/sdk-server';
 
-type TAttestation = TurnkeyApiTypes["v1Attestation"];
+type TAttestation = TurnkeyApiTypes['v1Attestation'];
 
 type CreateSubOrgWithWalletRequest = {
   subOrgName: string;
@@ -31,9 +31,9 @@ export default async function createUser(
 
   try {
     const turnkey = new Turnkey({
-      apiBaseUrl: process.env.NEXT_PUBLIC_BASE_URL!,
-      apiPrivateKey: process.env.API_PRIVATE_KEY!,
-      apiPublicKey: process.env.API_PUBLIC_KEY!,
+      apiBaseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+      apiPrivateKey: process.env.TURNKEY_API_PRIVATE_KEY!,
+      apiPublicKey: process.env.TURNKEY_API_PUBLIC_KEY!,
       defaultOrganizationId: process.env.NEXT_PUBLIC_ORGANIZATION_ID!,
     });
 
@@ -46,11 +46,11 @@ export default async function createUser(
       rootQuorumThreshold: 1,
       rootUsers: [
         {
-          userName: "New user",
+          userName: 'New user',
           apiKeys: [],
           authenticators: [
             {
-              authenticatorName: "Passkey",
+              authenticatorName: 'Passkey',
               challenge: createSubOrgRequest.challenge,
               attestation: createSubOrgRequest.attestation,
             },
@@ -78,7 +78,7 @@ export default async function createUser(
     console.error(e);
 
     res.status(500).json({
-      message: "Something went wrong.",
+      message: 'Something went wrong.',
     });
   }
 }
