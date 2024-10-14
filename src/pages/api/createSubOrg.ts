@@ -31,9 +31,9 @@ export default async function createUser(
 
   try {
     const turnkey = new Turnkey({
-      apiBaseUrl: process.env.NEXT_PUBLIC_BASE_URL!,
-      apiPrivateKey: process.env.API_PRIVATE_KEY!,
-      apiPublicKey: process.env.API_PUBLIC_KEY!,
+      apiBaseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+      apiPrivateKey: process.env.TURNKEY_API_PRIVATE_KEY!,
+      apiPublicKey: process.env.TURNKEY_API_PUBLIC_KEY!,
       defaultOrganizationId: process.env.NEXT_PUBLIC_ORGANIZATION_ID!,
     });
 
