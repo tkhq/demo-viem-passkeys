@@ -40,8 +40,8 @@ $ cp .env.local.example .env.local
 
 Now open `.env.local` and add the missing environment variables:
 
-- `API_PUBLIC_KEY`
-- `API_PRIVATE_KEY`
+- `TURNKEY_API_PUBLIC_KEY`
+- `TURNKEY_API_PRIVATE_KEY`
 - `NEXT_PUBLIC_TURNKEY_API_BASE_URL`
 - `NEXT_PUBLIC_ORGANIZATION_ID`
 
